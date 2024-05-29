@@ -1,0 +1,57 @@
+<?php
+// Connect to the database
+$db = new PDO('mysql:host=localhost;dbname=db_gms', 'root', '');
+
+// Check if search query is submitted
+if (isset($_POST['student_id'])) {
+    $searchQuery = $_POST['student_id'];
+    // Prepare and execute search query
+    $sql = 'SELECT s.*, v.id as violation_id, DATE_FORMAT(v.created_at, "%Y-%m-%d %h:%i %p") AS created_at, v.type, v.offense, v.level FROM students s 
+        LEFT JOIN violations v ON s.id = v.student_id
+        WHERE (s.id LIKE :query OR s.fullname LIKE :query) AND v.id IS NOT NULL AND v.sanctions = "" ORDER BY s.fullname ASC';
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':query' => '%'.$searchQuery.'%']);
+} else {
+    // Prepare and execute query to get all data from the students table along with corresponding violations data
+    $sql = 'SELECT s.*, v.id as violation_id, DATE_FORMAT(v.created_at, "%Y-%m-%d %h:%i %p") AS created_at, v.type, v.offense, v.level FROM students s 
+            LEFT JOIN violations v ON s.id = v.student_id
+            WHERE v.sanctions = "" ORDER BY s.fullname ASC';
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+}
+
+$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($results as $row) {
+
+    if($row['level'] == 1){
+        $level = "1st Offense";
+    }else if($row['level'] == 2){
+        $level = "2nd Offense";
+    }else if($row['level'] == 3){
+        $level = "3rd Offense";
+    }else if($row['level'] == 4){
+        $level = "Candidate for Expulsion";
+    }else if($row['level'] == 5){
+        $level = "Expelled";
+    }
+
+?>
+    <tr>
+        <td class="border-0 align-middle"><strong><?php echo $row['violation_id']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['id']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['fullname']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['age']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['sex']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['strand']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['guardian_name']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['phone']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['type']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['offense']; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $level; ?></strong></td>
+        <td class="border-0 align-middle"><strong><?php echo $row['created_at']; ?></strong></td>
+
+    </tr>  
+<?php
+}
+?>
